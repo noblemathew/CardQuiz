@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+# Getting Started with Quiz App
 
 This project was developed with React.js
 
