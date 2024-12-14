@@ -1,55 +1,77 @@
 import React, { useState, useEffect } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
-import { useNavigate } from "react-router-dom";
-import { Button } from "react-daisyui";
+import { Button, Card, Image } from "react-daisyui"; // Import necessary DaisyUI components
+import { useNavigate, useLocation } from "react-router-dom";
+import { database, ref, onValue } from "./firebase"; // Firebase imports
 
 const Lobby = () => {
-  const [users, setUsers] = useState([]); // State to store the list of users
   const navigate = useNavigate();
-  const db = getDatabase();
+  const location = useLocation();
+  const { name, image } = location.state || {}; // Access the passed state
+  const [users, setUsers] = useState([]); // State to store users
 
-  // Fetch users from Firebase in real-time
+  // Fetch users from Firebase when the component mounts
   useEffect(() => {
-    const usersRef = ref(db, "users");
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const usersList = Object.values(data);
-        setUsers(usersList);
-      } else {
-        setUsers([]);
+    const usersRef = ref(database, "users"); // Reference to the 'users' node in Firebase
+
+    // Listen for real-time updates
+    onValue(usersRef, (snapshot) => {
+      const usersData = snapshot.val();
+      const usersList = [];
+
+      // Convert the Firebase data into an array of users
+      for (let id in usersData) {
+        usersList.push(usersData[id]);
       }
+
+      setUsers(usersList); // Update the state with the users
     });
 
-    return () => unsubscribe();
-  }, [db]);
+    // Set the theme to light only
+    document.documentElement.setAttribute("data-theme", "light");
 
-  // Handle start quiz button
+  }, []); // Empty dependency array ensures this runs only once
+
   const handleStartQuiz = () => {
-    // Navigate to the Quiz page
-    navigate("/quiz");
+    // Navigate to quiz page and pass the user's name and image as state
+    navigate("/quiz", { state: { name, image } });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-t from-purple-500 to-indigo-500 flex items-center justify-center">
-      <div className="max-w-lg bg-white shadow-lg rounded-lg p-6 text-center">
-        <h1 className="text-3xl font-bold mb-4">Waiting Lobby</h1>
-        <p className="text-lg mb-4">Users who have joined:</p>
-        <ul className="mb-6">
-          {users.map((user, index) => (
-            <li key={index} className="flex items-center justify-center mb-4">
-              <img
-                src={user.image}
-                alt="User"
-                className="w-12 h-12 rounded-full mr-4"
-              />
-              <span className="text-lg">{user.name}</span>
-            </li>
-          ))}
-        </ul>
-        <Button color="primary" onClick={handleStartQuiz}>
-          Start Quiz
-        </Button>
+    <div className="min-h-screen bg-base-200 flex items-center justify-center bg-gradient-to-t from-purple-500 to-indigo-500">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-8">Welcome to the Lobby!</h1>
+
+
+        <h3 className="text-xl mb-4">Players Ready to Play:</h3>
+
+        <div className="flex flex-wrap justify-center">
+          {/* Render the list of users as cards */}
+          {users.length > 0 ? (
+            users.map((user, index) => (
+              <div key={index} className="m-4">
+                <Card className="w-48 shadow-lg">
+                  <Card.Image
+                    src={user.image}
+                    alt="Player"
+                    className="rounded-full w-24 h-24 mx-auto mt-4"
+                  />
+                  <Card.Body>
+                    <h2 className="text-center text-xl font-bold">{user.name}</h2>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))
+          ) : (
+            <p>No users yet. Waiting for others to join...</p>
+          )}
+        </div>
+
+        <div className="mt-8">
+          {/* Start Quiz Button */}
+          <Button color="primary" onClick={handleStartQuiz}>
+            Start Quiz
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,19 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Input } from "react-daisyui";
 import { Hero } from "react-daisyui";
 import { useNavigate } from "react-router-dom";
-import { database, ref, set } from "./firebase";
+import { database, ref, set, get, child } from "./firebase"; // Import necessary Firebase methods
 
 const App = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [image, setImage] = useState(null);  // State to hold the image
+  const [error, setError] = useState("");  // State to hold the error message
 
-  // Array of image links
   const imageLinks = [
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM25mM3g4M2NyMHJyeWh5aGQ1Y2wxbnMzZmh1Nmt2NXF5aXQyb2dzMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oriO4kSYahYQr6e1a/giphy.gif",
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHczam5veTkyemM0MXBnY3o3aDJ0bGt6MDI0djl3bjVyYzh3eDE2NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0IpXwyCXikRK9Yl2/giphy.gif",
-    // Add more images here
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGYwcmZvbDJlb3V5OTM0aXZzemJud3g2d3NyamdhZmFrcTJob2J2YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l2JJEjOrkIzRPfFao/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExa29sNnRoMHc2Z2NkNHYxNWJpMmF0OG9wMGxwM2RpcHoyamN2a3BweiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKJeRhSZDX3dCbm/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnBpeGhpdGt3OTVhMzhqbTVjb3J6MXpsaDRuOHZnZTc3bGJ6NmZ3eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Ogy9H6ggNvHKo/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExZnZra2RlanlhY3NvZ3p4ZGpucDkxdWg2NWlydXk3cjRyajgyY3U5aiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kFeF021b3ABCKSLxcm/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnlpZXo5dzhycG5pdTdndWxoamRzd2RuaGdvZHo2Nm1qeGsxaHJ6OCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5BuYzSHaxflSQyFmpA/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExYmRweXhhczQwMGRwdmd4aGVsbXBvN25wYnFtdXBobXhlcDQybWJkbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/JvlJSmxmKSXyE/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXo2a291M3BiemJtZWJnbzA4aDRuczNuemU0M202bWl5bXJveXRrcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1IEJh4dNqYT6xHOJAL/giphy.gif",
+    "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOXV5eDR4eDZ0bjR4ZHJ6eHVoaWk5NTdlamp0NDZibXphMHEyZHQ5ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13bowzwNtiuqNF2pav/giphy.gif"
   ];
 
   // Set the random image only once when the component mounts
@@ -25,16 +32,37 @@ const App = () => {
     document.documentElement.setAttribute("data-theme", "light");
   }, []);  // Empty dependency array ensures this only runs once
 
-  const handleNavigate = () => {
-    if (name.trim()) {
-      // Save user data to Firebase
-      set(ref(database, "users/" + Date.now()), {
-        name: name,
-        image: image,  // Use the selected image
-      });
+  // Check if the name is unique by querying Firebase
+  const checkIfNameExists = async (name) => {
+    const usersRef = ref(database, "users");
+    const snapshot = await get(usersRef);
+    const usersData = snapshot.val();
 
-      // Navigate to Quiz page with name and image as state
-      navigate("/quiz", { state: { name: name, image: image } });
+    // Check if the entered name exists in the database
+    for (let id in usersData) {
+      if (usersData[id].name === name) {
+        return true; // Name already exists
+      }
+    }
+    return false; // Name is unique
+  };
+
+  const handleNavigate = async () => {
+    if (name.trim()) {
+      const isNameTaken = await checkIfNameExists(name);
+
+      if (isNameTaken) {
+        setError("This name is already taken. Please choose a different name.");
+      } else {
+        // Save user data to Firebase
+        set(ref(database, "users/" + Date.now()), {
+          name: name,
+          image: image,  // Use the selected image
+        });
+
+        // Navigate to Lobby page with name and image as state
+        navigate("/lobby", { state: { name: name, image: image } });
+      }
     }
   };
 
@@ -56,16 +84,17 @@ const App = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}  // Only updates name, not image
           />
+          {/* Display error message if the name is already taken */}
+          {error && <p>{error}</p>}
           <div>
-          <Button
-            color="primary"
-            className="btn btn-primary mt-4"
-            onClick={handleNavigate}
-          >
-          
-            START
-          </Button>
-        </div>
+            <Button
+              color="primary"
+              className="btn btn-primary mt-4"
+              onClick={handleNavigate}
+            >
+              START
+            </Button>
+          </div>
         </div>
       </Hero.Content>
     </Hero>
