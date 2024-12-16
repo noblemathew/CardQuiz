@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Button, Input } from "react-daisyui";
 import { Hero } from "react-daisyui";
 import { useNavigate } from "react-router-dom";
-import { database, ref, set, get, child } from "./firebase"; // Import necessary Firebase methods
+import { database, ref, set, get } from "./firebase"; // Import necessary Firebase methods
 
 const App = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [image, setImage] = useState(null);  // State to hold the image
-  const [error, setError] = useState("");  // State to hold the error message
+  const [image, setImage] = useState(null); // State to hold the image
+  const [error, setError] = useState(""); // State to hold the error message
 
   const imageLinks = [
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM25mM3g4M2NyMHJyeWh5aGQ1Y2wxbnMzZmh1Nmt2NXF5aXQyb2dzMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oriO4kSYahYQr6e1a/giphy.gif",
@@ -26,21 +26,26 @@ const App = () => {
   // Set the random image only once when the component mounts
   useEffect(() => {
     const randomImage = imageLinks[Math.floor(Math.random() * imageLinks.length)];
-    setImage(randomImage);  // Set the image once on mount
+    setImage(randomImage);
 
     // Force the theme to be light only, even on page refresh
     document.documentElement.setAttribute("data-theme", "light");
-  }, []);  // Empty dependency array ensures this only runs once
+  }, []);
 
-  // Check if the name is unique by querying Firebase
+  // Check if the name is unique by querying Firebase (case-insensitive check)
   const checkIfNameExists = async (name) => {
     const usersRef = ref(database, "users");
     const snapshot = await get(usersRef);
     const usersData = snapshot.val();
 
-    // Check if the entered name exists in the database
+    if (!usersData) {
+      return false; // No users in the database yet
+    }
+
+    // Normalize both input and stored names for case-insensitive comparison
+    const normalizedName = name.trim().toLowerCase();
     for (let id in usersData) {
-      if (usersData[id].name === name) {
+      if (usersData[id].name.trim().toLowerCase() === normalizedName) {
         return true; // Name already exists
       }
     }
@@ -57,7 +62,7 @@ const App = () => {
         // Save user data to Firebase
         set(ref(database, "users/" + Date.now()), {
           name: name,
-          image: image,  // Use the selected image
+          image: image, // Use the selected image
         });
 
         // Navigate to Lobby page with name and image as state
@@ -73,18 +78,18 @@ const App = () => {
           <h1 className="text-4xl font-bold mb-8">Kiran's Wedding Quiz!</h1>
           {image && (
             <img
-              src={image}  // Display the fixed image
+              src={image} // Display the fixed image
               alt="Profile"
               className="w-56 h-56 rounded-full mx-auto mb-8"
             />
           )}
           <Input
-            className="input input-bordered input-rounded border-black text-black focus:border-black focus:ring-0 mb-4"
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}  // Only updates name, not image
-          />
-          {/* Display error message if the name is already taken */}
+  className="input input-bordered input-rounded border-black text-black focus:border-black focus:ring-0 mb-4"
+  placeholder="Enter your name"
+  value={name}
+  onChange={(e) => setName(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1))}
+/>
+
           {error && <p>{error}</p>}
           <div>
             <Button

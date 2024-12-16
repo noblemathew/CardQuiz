@@ -1,163 +1,163 @@
 import React, { useState, useEffect } from "react";
-import { getDatabase, ref, set, onValue, push } from "firebase/database";
-import { initializeApp } from "firebase/app";
-import { useLocation } from "react-router-dom";
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS } from "chart.js/auto"; // Correct import
-
-
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyApIaeWXiAMBa6q3D7hKndZ85R6X9-niQY",
-  authDomain: "quiz-2b538.firebaseapp.com",
-  projectId: "quiz-2b538",
-  storageBucket: "quiz-2b538.firebasestorage.app",
-  messagingSenderId: "39049773467",
-  appId: "1:39049773467:web:c7aabfd458e2a2c46e613e"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+import { useNavigate } from "react-router-dom";
+import { database, ref, set, onValue } from "./firebase"; // Correctly import Firebase functions
 
 const Quiz = () => {
-  const location = useLocation();
-  const { name } = location.state || {}; // Get user's name passed via state
+  const navigate = useNavigate();
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Start from the first question
+  const [selectedOption, setSelectedOption] = useState(null); // User's selected option
+  const [timer, setTimer] = useState(15); // 15-second timer
+  const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false); // Waiting for the next question
+  const [timesUp, setTimesUp] = useState(false); // Indicates if time is up
+  const [responseTimeMessage, setResponseTimeMessage] = useState(""); // Stores the feedback message
 
+  // Define questions statically
   const questions = [
     {
       id: 1,
       question: "What is the capital of France?",
-      options: ["Paris", "Rome", "Berlin", "Madrid"],
-      correct: "Paris",
+      options: ["Paris", "London", "Berlin", "Madrid"],
     },
     {
       id: 2,
-      question: "What is the largest planet in the solar system?",
-      options: ["Mars", "Earth", "Jupiter", "Saturn"],
-      correct: "Jupiter",
+      question: "What is 2 + 2?",
+      options: ["3", "4", "5", "6"],
     },
     {
       id: 3,
-      question: "Who wrote 'Hamlet'?",
-      options: ["Shakespeare", "Tolstoy", "Homer", "Plato"],
-      correct: "Shakespeare",
+      question: "Which planet is known as the Red Planet?",
+      options: ["Earth", "Mars", "Jupiter", "Saturn"],
     },
   ];
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [showScoreboard, setShowScoreboard] = useState(false);
-  const [responses, setResponses] = useState({});
-  const [score, setScore] = useState(0);
+  const currentQuestion = questions[currentQuestionIndex]; // Get the current question based on the index
 
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Listen to responses in Firebase
+  // Listen to currentQuestionIndex changes in Firebase
   useEffect(() => {
-    const responsesRef = ref(db, "responses");
-    onValue(responsesRef, (snapshot) => {
+    const questionIndexRef = ref(database, "game/currentQuestion"); // Use the `database` from Firebase
+    const unsubscribe = onValue(questionIndexRef, (snapshot) => {
       if (snapshot.exists()) {
-        setResponses(snapshot.val());
+        const newQuestionIndex = snapshot.val() - 1; // Assuming Firebase index starts at 1
+        updateQuestionIndex(newQuestionIndex);
       }
     });
+
+    return () => unsubscribe(); // Clean up the listener on component unmount
   }, []);
 
-  // Handle option click
-  const handleOptionClick = (selectedOption) => {
-    const isCorrect = selectedOption === currentQuestion.correct;
+  useEffect(() => {
+    if (currentQuestion && timer > 0 && !waitingForNextQuestion) {
+      // Countdown timer logic
+      const countdown = setInterval(() => {
+        setTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
 
-    if (isCorrect) {
-      setScore((prevScore) => prevScore + 1);
+      return () => clearInterval(countdown); // Clean up interval when component is unmounted or when timer stops
+    } else if (timer === 0) {
+      setTimesUp(true); // Time's up when the timer reaches 0
+      setWaitingForNextQuestion(true); // Block further answers after time is up
     }
+  }, [timer, currentQuestion, waitingForNextQuestion]);
 
-    // Log the user's response in Firebase
-    const questionId = currentQuestion.id;
-    const responsesRef = ref(db, `responses/${questionId}`);
-    const newResponse = {
-      name,
-      selectedOption,
-      isCorrect,
-      timestamp: Date.now(),
-    };
+  const handleOptionSelect = (option) => {
+    if (!waitingForNextQuestion && !timesUp) {
+      setSelectedOption(option);
+      setWaitingForNextQuestion(true); // Prevent further selection after answering
+      const responseTime = 15 - timer; // Calculate the response time
 
-    // Push response to Firebase
-    push(responsesRef, newResponse);
+      // You can store the answer and response time here
+      console.log("Answer:", option, "Response Time:", responseTime);
 
-    // Show scoreboard after the current question
-    setShowScoreboard(true);
-  };
-
-  // Proceed to the next question
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      setShowScoreboard(false);
-    } else {
-      alert("Quiz Finished! Thanks for playing.");
-    }
-  };
-
-  // Generate histogram data for the scoreboard
-  const generateHistogramData = () => {
-    const currentResponses = responses[currentQuestion.id] || {};
-    const scores = {};
-
-    // Calculate scores for each user
-    Object.values(currentResponses).forEach((response) => {
-      if (response.isCorrect) {
-        scores[response.name] = (scores[response.name] || 0) + 1;
+      // Display feedback based on response time
+      if (responseTime <= 3) {
+        setResponseTimeMessage("Wow, that was quick! 🔥");
+      } else if (responseTime <= 6) {
+        setResponseTimeMessage("Nice job! You're fast! ⚡");
+      } else if (responseTime <= 10) {
+        setResponseTimeMessage("Good choice! Keep it up! 👍");
+      } else {
+        setResponseTimeMessage("Took your time, huh? 🤔");
       }
-    });
 
-    return {
-      labels: Object.keys(scores),
-      datasets: [
-        {
-          label: "Score",
-          data: Object.values(scores),
-          backgroundColor: "rgba(75,192,192,1)",
-          borderWidth: 1,
-        },
-      ],
-    };
+      // Store the user's response in Firebase
+      const userId = "user_123"; // Replace with actual user ID or generate dynamically
+      const responseRef = ref(database, `responses/${currentQuestion.id}/${userId}`);
+      set(responseRef, {
+        option,
+        responseTime, // Store the response time as well if needed
+        timestamp: Date.now(), // Store the timestamp for sorting and reference
+      });
+    }
   };
+
+  // Admin-controlled function to change the question (external trigger for next question)
+  const updateQuestionIndex = (newIndex) => {
+    setCurrentQuestionIndex(newIndex); // Update question index
+    setSelectedOption(null); // Reset selected option
+    setTimer(15); // Reset timer to 15 seconds
+    setTimesUp(false); // Reset times up state
+    setWaitingForNextQuestion(false); // Allow interaction with next question
+    setResponseTimeMessage(""); // Reset feedback message
+  };
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold">No more questions available</h1>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-t from-purple-500 to-indigo-500 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6 text-center">
-        {showScoreboard ? (
-          <div>
-            <h1 className="text-2xl font-bold mb-4">Scoreboard</h1>
-            <div className="mb-4">
-              <Bar data={generateHistogramData()} />
-            </div>
+    <div className="min-h-screen bg-gradient-to-t from-purple-500 to-indigo-500 flex flex-col items-center justify-center text-white">
+      <div className="w-full max-w-2xl p-4 bg-gray-800 rounded-lg shadow-lg">
+        <h1 className="text-2xl font-bold mb-4">{currentQuestion.question}</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {currentQuestion.options.map((option, index) => (
             <button
-              className="btn btn-primary"
-              onClick={handleNextQuestion}
+              key={index}
+              className={`p-4 rounded-lg text-lg font-semibold ${
+                selectedOption === option
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
+              }`}
+              disabled={waitingForNextQuestion || timesUp} // Disable buttons after selecting or when time's up
+              onClick={() => handleOptionSelect(option)}
             >
-              {currentQuestionIndex === questions.length - 1
-                ? "Finish Quiz"
-                : "Next Question"}
+              {option}
             </button>
+          ))}
+        </div>
+
+        {selectedOption && (
+          <p className="mt-4 text-center text-lg">
+            You selected: <span className="font-bold">{selectedOption}</span>
+          </p>
+        )}
+
+        {!waitingForNextQuestion && (
+          <div className="mt-6 text-center">
+            <p className="text-xl font-bold">Time left: {timer} seconds</p>
           </div>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold mb-4">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </h1>
-            <p className="mb-6 text-xl">{currentQuestion.question}</p>
-            <div className="grid grid-cols-2 gap-4">
-              {currentQuestion.options.map((option, index) => (
-                <button
-                  key={index}
-                  className="btn btn-outline text-lg"
-                  onClick={() => handleOptionClick(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </>
+        )}
+
+        {timesUp && (
+          <div className="mt-6 text-center">
+            <p className="text-2xl font-bold text-red-500">Time's Up!</p>
+          </div>
+        )}
+
+        {responseTimeMessage && (
+          <div className="mt-6 text-center">
+            <p className="text-xl font-semibold text-yellow-400">{responseTimeMessage}</p>
+          </div>
+        )}
+
+        {waitingForNextQuestion && !timesUp && (
+          <div className="mt-6 text-center">
+            <p className="text-xl font-bold">Waiting for the next question...</p>
+          </div>
         )}
       </div>
     </div>
