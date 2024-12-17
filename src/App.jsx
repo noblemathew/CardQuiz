@@ -74,7 +74,7 @@ const App = () => {
     <Hero className="min-h-screen bg-base-200 flex items-center justify-center bg-gradient-to-t from-purple-500 to-indigo-500">
       <Hero.Content className="text-center">
         <div className="max-w-md">
-          <h1 className="text-4xl font-bold mb-8">Kiran's Wedding Quiz!</h1>
+          <h1 className="text-4xl font-bold mb-8">Welcome to the Quiz!</h1>
           {image && (
             <img
               src={image} // Display the fixed image
