@@ -3,13 +3,12 @@ import { Button, Input } from "react-daisyui";
 import { Hero } from "react-daisyui";
 import { useNavigate } from "react-router-dom";
 import { database, ref, set, get } from "./firebase"; // Import necessary Firebase methods
-
+//Added
 const App = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [image, setImage] = useState(null); // State to hold the image
   const [error, setError] = useState(""); // State to hold the error message
-
   const imageLinks = [
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM25mM3g4M2NyMHJyeWh5aGQ1Y2wxbnMzZmh1Nmt2NXF5aXQyb2dzMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oriO4kSYahYQr6e1a/giphy.gif",
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHczam5veTkyemM0MXBnY3o3aDJ0bGt6MDI0djl3bjVyYzh3eDE2NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0IpXwyCXikRK9Yl2/giphy.gif",
