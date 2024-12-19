@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import Lobby from "./Lobby";
+import Lobby from "./lobby";
 import Quiz from "./Quiz";
 import Admin from "./Admin"; // Import the Admin component
 import "./tailwind.css"; // Import Tailwind if required globally

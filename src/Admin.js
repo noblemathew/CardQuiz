@@ -42,7 +42,6 @@ const Admin = () => {
   useEffect(() => {
     const message = "Players in the Lobby."; // The static text part
     const fullMessage = `${message} (${currentPlayerCount})`; // Full message including player count
-    const typingMessage = `${message} (${currentPlayerCount})`; // Full message with player count
     
     const interval = setInterval(() => {
       setTypingIndex((prevIndex) => {
@@ -67,52 +66,48 @@ const Admin = () => {
 
   // Start the game and update the game status in Firebase
   const handleStartGame = () => {
-    // Set the game status to "started" in Firebase
     const gameRef = ref(database, "game/status");
     set(gameRef, "started"); // Update the game status to "started"
-    
     navigate("/quizadmin"); // Navigate to the quizadmin page
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4 bg-gradient-to-t from-purple-500 to-indigo-500">
-      <h1 className="text-5xl font-bold mb-6 mt-4 text-black">Quiz Game</h1>
+    <div className="min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex flex-col items-center p-8">
+      <h1 className="text-5xl font-bold text-white mb-6">Quiz Game</h1>
 
-      <Card className="mb-6">
-        <h2 className="text-2xl font-semibold text-black mb-4 flex flex-col items-center p-4">
+      <Card className="mb-6 shadow-lg p-6 rounded-xl bg-white bg-opacity-60">
+        <h2 className="text-2xl font-semibold text-black mb-4 text-center">
           {typingText} {/* Display the typing text */}
         </h2>
-        <div className="grid grid-cols-4 gap-4 sm:grid-cols-6 md:grid-cols-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {players.length > 0 ? (
             players.map((player, index) => (
-              <div key={index} className="flex justify-center"> {/* Center each card horizontally */}
-                <Card className="w-48 shadow-lg rounded-lg mb-6 mt-4 pt-4 pb-3" 
-                      style={{ backgroundColor: pastelColors[index % pastelColors.length] }}>
-                  <Card.Body className="p-4 pt-8">
+              <div key={index} className="flex justify-center">
+                <Card 
+                  className="w-full max-w-sm shadow-lg rounded-lg mb-6 pt-6 pb-4" 
+                  style={{ backgroundColor: pastelColors[index % pastelColors.length] }}>
+                  <Card.Body className="p-4 pt-8 text-center">
                     <Card.Image
                       src={player.image}
                       alt="Player Avatar"
-                      className="rounded-full w-20 h-20 mx-auto"
+                      className="rounded-full w-24 h-24 mx-auto mb-4"
                     />
-                    <h2 className="text-center text-xl font-bold text-black mt-4">
-                      {player.name}
-                    </h2>
+                    <h3 className="text-xl font-semibold text-black">{player.name}</h3>
                   </Card.Body>
                 </Card>
               </div>
             ))
           ) : (
-            <p>No players yet. Waiting for others to join...</p>
+            <p className="text-center text-black">No players yet. Waiting for others to join...</p>
           )}
         </div>
       </Card>
 
       {/* Game control section */}
-      <Card className="mb-6 p-4">
-        <h2 className="text-2xl font-semibold text-black items-center mb-4"></h2>
+      <Card className="mb-6 shadow-lg p-6 rounded-xl bg-white bg-opacity-60">
         {gameStatus === "waiting" && (
-          <div className="text-white mb-4 flex flex-col items-center p-4">
-            <Button color="black" className="text-white text-3xl" onClick={handleStartGame}>
+          <div className="text-center">
+            <Button color="primary" className="text-white text-2xl px-8 py-4" onClick={handleStartGame}>
               Start Game
             </Button>
           </div>
@@ -121,5 +116,5 @@ const Admin = () => {
     </div>
   );
 };
- //git
+
 export default Admin;

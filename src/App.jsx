@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Button, Input } from "react-daisyui";
 import { Hero } from "react-daisyui";
 import { useNavigate } from "react-router-dom";
-import { database, ref, set, get } from "./firebase"; // Import necessary Firebase methods
-//Added
+import { database, ref, set, get } from "./firebase";
+
 const App = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [image, setImage] = useState(null); // State to hold the image
-  const [error, setError] = useState(""); // State to hold the error message
+  const [image, setImage] = useState(null);
+  const [error, setError] = useState("");
   const imageLinks = [
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM25mM3g4M2NyMHJyeWh5aGQ1Y2wxbnMzZmh1Nmt2NXF5aXQyb2dzMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oriO4kSYahYQr6e1a/giphy.gif",
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHczam5veTkyemM0MXBnY3o3aDJ0bGt6MDI0djl3bjVyYzh3eDE2NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l0IpXwyCXikRK9Yl2/giphy.gif",
@@ -22,33 +22,28 @@ const App = () => {
     "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExOXV5eDR4eDZ0bjR4ZHJ6eHVoaWk5NTdlamp0NDZibXphMHEyZHQ5ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/13bowzwNtiuqNF2pav/giphy.gif"
   ];
 
-  // Set the random image only once when the component mounts
   useEffect(() => {
     const randomImage = imageLinks[Math.floor(Math.random() * imageLinks.length)];
     setImage(randomImage);
-
-    // Force the theme to be light only, even on page refresh
     document.documentElement.setAttribute("data-theme", "light");
   }, []);
 
-  // Check if the name is unique by querying Firebase (case-insensitive check)
   const checkIfNameExists = async (name) => {
     const usersRef = ref(database, "users");
     const snapshot = await get(usersRef);
     const usersData = snapshot.val();
 
     if (!usersData) {
-      return false; // No users in the database yet
+      return false;
     }
 
-    // Normalize both input and stored names for case-insensitive comparison
     const normalizedName = name.trim().toLowerCase();
     for (let id in usersData) {
       if (usersData[id].name.trim().toLowerCase() === normalizedName) {
-        return true; // Name already exists
+        return true;
       }
     }
-    return false; // Name is unique
+    return false;
   };
 
   const handleNavigate = async () => {
@@ -58,42 +53,39 @@ const App = () => {
       if (isNameTaken) {
         setError("This name is already taken. Please choose a different name.");
       } else {
-        // Save user data to Firebase
         set(ref(database, "users/" + Date.now()), {
           name: name,
-          image: image, // Use the selected image
+          image: image,
         });
-
-        // Navigate to Lobby page with name and image as state
         navigate("/lobby", { state: { name: name, image: image } });
       }
     }
   };
 
   return (
-    <Hero className="min-h-screen bg-base-200 flex items-center justify-center bg-gradient-to-t from-purple-500 to-indigo-500">
-      <Hero.Content className="text-center">
-        <div className="max-w-md">
-          <h1 className="text-4xl font-bold mb-8">Welcome to the Quiz!</h1>
-          {image && (
-            <img
-              src={image} // Display the fixed image
-              alt="Profile"
-              className="w-56 h-56 rounded-full mx-auto mb-8"
+    <Hero className="min-h-screen bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
+      <Hero.Content className="text-center p-6">
+        <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="p-6">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to the Quiz!</h1>
+            <p className="text-gray-600 mb-8">Get ready to test your knowledge and have fun!</p>
+            {image && (
+              <img
+                src={image}
+                alt="Profile"
+                className="w-40 h-40 mx-auto rounded-full mb-6 border-4 border-purple-500 shadow-lg"
+              />
+            )}
+            <Input
+              className="input input-bordered w-full text-black mb-4 px-4 py-3 rounded-full focus:ring focus:ring-purple-300"
+              placeholder="Enter your name"
+              value={name}
+              onChange={(e) => setName(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1))}
             />
-          )}
-          <Input
-  className="input input-bordered input-rounded border-black text-black focus:border-black focus:ring-0 mb-4"
-  placeholder="Enter your name"
-  value={name}
-  onChange={(e) => setName(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1))}
-/>
-
-          {error && <p>{error}</p>}
-          <div>
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             <Button
               color="primary"
-              className="btn btn-primary mt-4"
+              className="btn btn-primary w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transform transition-transform hover:scale-105"
               onClick={handleNavigate}
             >
               START
